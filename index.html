@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home Palette Match Board</title>
+  <style>
+    :root{
+      --soft-white:#F4F0E8; --warm-white:#F1E9DC; --taupe:#A89987;
+      --sage:#8F967B; --olive:#697057; --clay:#A7653F;
+      --espresso:#2B211B; --charcoal:#36393A; --nickel:#B7B6B0;
+      --oak:#B18A62;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:linear-gradient(135deg,var(--soft-white),#fff);color:var(--espresso)}
+    header{text-align:center;padding:30px 16px 18px;border-bottom:1px solid #ddd0c2}
+    h1{font-family:Georgia,serif;font-weight:500;font-size:clamp(30px,6vw,60px);margin:0}
+    h1 span{font-style:italic;color:var(--olive)}
+    .subtitle{text-transform:uppercase;letter-spacing:.18em;font-size:12px;color:#6b6259;margin-top:8px}
+    main{max-width:1100px;margin:auto;padding:20px 14px 50px}
+    .card{background:#fffaf2;border:1px solid #ddd0c2;border-radius:20px;padding:18px;margin:16px 0;box-shadow:0 10px 28px rgba(43,33,27,.07)}
+    h2{text-transform:uppercase;letter-spacing:.06em;font-size:19px;margin:0 0 12px}
+    .palette{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:10px}
+    .swatch{height:74px;border-radius:15px;border:1px solid #cfc3b5;position:relative;overflow:hidden}
+    .swatch span{position:absolute;left:7px;right:7px;bottom:7px;background:rgba(255,255,255,.78);border-radius:8px;padding:4px;font-size:11px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:780px){.grid{grid-template-columns:1fr}}
+    input, textarea, select{width:100%;border:1px solid #cfc3b5;border-radius:13px;background:#fffdf8;padding:12px;font:inherit;color:var(--espresso)}
+    textarea{min-height:90px}
+    label{font-weight:700;font-size:13px;margin:10px 0 6px;display:block}
+    button{border:0;border-radius:999px;background:var(--olive);color:white;padding:12px 17px;font-weight:800;cursor:pointer;margin:8px 8px 0 0}
+    button.secondary{background:var(--espresso)}
+    button.light{background:#e7e0d4;color:var(--espresso)}
+    .preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-top:12px}
+    .item{border:1px solid #ddd0c2;border-radius:17px;background:#fff;padding:10px}
+    .item img{width:100%;height:130px;object-fit:cover;border-radius:12px;background:#eee}
+    .score{font-size:42px;font-family:Georgia,serif;color:var(--olive);margin:4px 0}
+    .pill{display:inline-block;border-radius:999px;padding:6px 9px;margin:4px;font-size:12px;background:#eee6d8}
+    .good{background:#e4eadb}.warn{background:#f1dfc8}.bad{background:#ead3cf}
+    .small{font-size:13px;color:#6d655c;line-height:1.45}
+    .error{background:#ead3cf;padding:10px;border-radius:12px;margin-top:10px;display:none}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Our Home <span>Palette Match Board</span></h1>
+  <div class="subtitle">Modern Organic Transitional · Bright · Warm · Refined</div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Core Palette</h2>
+    <div class="palette">
+      <div class="swatch" style="background:var(--soft-white)"><span>Soft White</span></div>
+      <div class="swatch" style="background:var(--warm-white)"><span>Warm White</span></div>
+      <div class="swatch" style="background:var(--oak)"><span>Light Oak</span></div>
+      <div class="swatch" style="background:var(--espresso);color:white"><span>Espresso</span></div>
+      <div class="swatch" style="background:var(--nickel)"><span>Brushed Nickel</span></div>
+      <div class="swatch" style="background:var(--sage)"><span>Sage</span></div>
+      <div class="swatch" style="background:var(--olive);color:white"><span>Olive</span></div>
+      <div class="swatch" style="background:var(--clay);color:white"><span>Clay</span></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Add an Option</h2>
+      <label for="photo">Photo</label>
+      <input id="photo" type="file" accept="image/*" />
+      <label for="room">Room</label>
+      <select id="room">
+        <option>Kitchen</option><option>Living Room</option><option>Dining Room</option>
+        <option>Primary Bedroom</option><option>Bathroom</option><option>Office</option><option>Other</option>
+      </select>
+      <label for="title">What is it?</label>
+      <input id="title" placeholder="Example: Sage accent chair" />
+      <label for="notes">Notes / Colors / Material</label>
+      <textarea id="notes" placeholder="Example: muted sage fabric, warm oak legs, brushed nickel detail"></textarea>
+      <button id="saveBtn" type="button">Save & Check Match</button>
+      <button id="clearBtn" type="button" class="light">Clear Form</button>
+      <div id="error" class="error"></div>
+      <p class="small">This saves to this browser/device only. Use “Export Saved Board” to back it up.</p>
+    </section>
+
+    <section class="card">
+      <h2>Match Result</h2>
+      <div class="score" id="score">—</div>
+      <div id="verdict">Add an option to check it against your theme.</div>
+      <div id="tags" style="margin-top:10px"></div>
+      <button id="exportBtn" type="button" class="secondary">Export Saved Board</button>
+      <button id="resetBtn" type="button" class="light">Delete Saved Board</button>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Saved Options</h2>
+    <div id="saved" class="preview"></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  const storageKey = "homePaletteBoardV3";
+  let pendingImage = "";
+  let board = [];
+
+  function $(id){ return document.getElementById(id); }
+
+  function loadBoard(){
+    try { board = JSON.parse(localStorage.getItem(storageKey) || "[]"); }
+    catch(e){ board = []; }
+  }
+
+  function saveBoard(){
+    try { localStorage.setItem(storageKey, JSON.stringify(board)); }
+    catch(e){ showError("Your browser blocked saving, likely because the images are too large. Try a smaller photo or export your board after adding text-only items."); }
+  }
+
+  function showError(message){
+    $("error").textContent = message;
+    $("error").style.display = "block";
+  }
+
+  function clearError(){
+    $("error").textContent = "";
+    $("error").style.display = "none";
+  }
+
+  function analyzeText(text){
+    text = (text || "").toLowerCase();
+    const good = ["sage","olive","warm white","soft white","oak","walnut","linen","rattan","clay","terracotta","taupe","espresso","nickel","brushed nickel","charcoal","leather","natural","woven","cream","beige"];
+    const warn = ["brass","gold","gray","grey","blue","navy","black","chrome","dark","white"];
+    const bad = ["icy","cool gray","cool grey","yellow cream","orange wood","red","distressed","farmhouse","glossy chrome","silver overload"];
+    let score = 72, tags = [];
+    good.forEach(w => { if(text.indexOf(w) !== -1){ score += 4; tags.push(["good", w]); }});
+    warn.forEach(w => { if(text.indexOf(w) !== -1){ score -= 2; tags.push(["warn", w]); }});
+    bad.forEach(w => { if(text.indexOf(w) !== -1){ score -= 9; tags.push(["bad", w]); }});
+    score = Math.max(30, Math.min(98, score));
+    return {score, tags};
+  }
+
+  function verdict(score){
+    if(score >= 85) return "Strong match. This fits the Modern Organic Transitional direction.";
+    if(score >= 70) return "Likely works. Check undertones and balance it with warm textures.";
+    return "Risky match. It may pull the house too cool, too heavy, or off-palette.";
+  }
+
+  function showResult(result){
+    $("score").textContent = result.score + "%";
+    $("verdict").textContent = verdict(result.score);
+    $("tags").innerHTML = result.tags.map(t => '<span class="pill '+t[0]+'">'+t[1]+'</span>').join("");
+  }
+
+  function clearForm(){
+    $("title").value = "";
+    $("notes").value = "";
+    $("photo").value = "";
+    pendingImage = "";
+    clearError();
+  }
+
+  function saveItem(){
+    clearError();
+    const title = $("title").value.trim() || "Untitled option";
+    const room = $("room").value;
+    const notes = $("notes").value.trim();
+    const result = analyzeText(title + " " + room + " " + notes);
+    const item = {
+      id: Date.now(),
+      title: title,
+      room: room,
+      notes: notes,
+      image: pendingImage,
+      score: result.score,
+      tags: result.tags
+    };
+    board.unshift(item);
+    saveBoard();
+    showResult(result);
+    renderBoard();
+    clearForm();
+  }
+
+  function renderBoard(){
+    const saved = $("saved");
+    if(!board.length){
+      saved.innerHTML = "<p class='small'>No saved items yet.</p>";
+      return;
+    }
+    saved.innerHTML = board.map(item => {
+      return '<div class="item">' +
+        (item.image ? '<img src="'+item.image+'" alt="Saved option">' : '') +
+        '<strong>'+escapeHtml(item.title)+'</strong>' +
+        '<div class="small">'+escapeHtml(item.room)+'</div>' +
+        '<div class="score" style="font-size:28px">'+item.score+'%</div>' +
+        '<div class="small">'+verdict(item.score)+'</div>' +
+        '<p class="small">'+escapeHtml(item.notes || "")+'</p>' +
+        '<button class="light deleteBtn" type="button" data-id="'+item.id+'">Delete</button>' +
+      '</div>';
+    }).join("");
+
+    document.querySelectorAll(".deleteBtn").forEach(btn => {
+      btn.addEventListener("click", function(){
+        const id = Number(this.getAttribute("data-id"));
+        board = board.filter(x => x.id !== id);
+        saveBoard();
+        renderBoard();
+      });
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, function(m){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m];
+    });
+  }
+
+  function exportData(){
+    const blob = new Blob([JSON.stringify(board, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "home-palette-board.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function resetBoard(){
+    if(window.confirm("Delete all saved options on this device?")){
+      board = [];
+      localStorage.removeItem(storageKey);
+      renderBoard();
+      $("score").textContent = "—";
+      $("verdict").textContent = "Add an option to check it against your theme.";
+      $("tags").innerHTML = "";
+    }
+  }
+
+  $("photo").addEventListener("change", function(){
+    clearError();
+    const f = this.files && this.files[0];
+    if(!f){ pendingImage = ""; return; }
+    const reader = new FileReader();
+    reader.onload = function(e){ pendingImage = e.target.result; };
+    reader.onerror = function(){ showError("Photo could not be loaded. Try a different image."); };
+    reader.readAsDataURL(f);
+  });
+
+  $("saveBtn").addEventListener("click", saveItem);
+  $("clearBtn").addEventListener("click", clearForm);
+  $("exportBtn").addEventListener("click", exportData);
+  $("resetBtn").addEventListener("click", resetBoard);
+
+  loadBoard();
+  renderBoard();
+})();
+</script>
+</body>
+</html>
