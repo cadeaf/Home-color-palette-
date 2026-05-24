@@ -100,7 +100,7 @@
 
 <script>
 (function(){
-  const storageKey = "homePaletteBoardV3";
+  const storageKey = "homePaletteBoardV4";
   let pendingImage = "";
   let board = [];
 
@@ -116,33 +116,61 @@
     catch(e){ showError("Your browser blocked saving, likely because the images are too large. Try a smaller photo or export your board after adding text-only items."); }
   }
 
-  function showError(message){
-    $("error").textContent = message;
-    $("error").style.display = "block";
-  }
+  function showError(message){ $("error").textContent = message; $("error").style.display = "block"; }
+  function clearError(){ $("error").textContent = ""; $("error").style.display = "none"; }
 
-  function clearError(){
-    $("error").textContent = "";
-    $("error").style.display = "none";
+  function countMatches(text, terms){
+    let count = 0, tags = [];
+    terms.forEach(t => { if(text.indexOf(t.term) !== -1){ count++; tags.push([t.type, t.term]); }});
+    return {count, tags};
   }
 
   function analyzeText(text){
     text = (text || "").toLowerCase();
-    const good = ["sage","olive","warm white","soft white","oak","walnut","linen","rattan","clay","terracotta","taupe","espresso","nickel","brushed nickel","charcoal","leather","natural","woven","cream","beige"];
-    const warn = ["brass","gold","gray","grey","blue","navy","black","chrome","dark","white"];
-    const bad = ["icy","cool gray","cool grey","yellow cream","orange wood","red","distressed","farmhouse","glossy chrome","silver overload"];
-    let score = 72, tags = [];
-    good.forEach(w => { if(text.indexOf(w) !== -1){ score += 4; tags.push(["good", w]); }});
-    warn.forEach(w => { if(text.indexOf(w) !== -1){ score -= 2; tags.push(["warn", w]); }});
-    bad.forEach(w => { if(text.indexOf(w) !== -1){ score -= 9; tags.push(["bad", w]); }});
-    score = Math.max(30, Math.min(98, score));
+    const strongGood = ["sage","olive","warm white","soft white","oak","walnut","linen","rattan","clay","terracotta","taupe","espresso","brushed nickel","nickel","leather","natural","woven"];
+    const okayGood = ["cream","beige","charcoal","stone","sand","ivory","greige","mushroom","khaki"];
+    const caution = ["brass","gold","gray","grey","blue","navy","black","chrome","dark","white","silver"];
+    const dealBreakers = ["bright red","red couch","red sofa","red chair","cherry red","fire engine red","burgundy","maroon","purple","pink","orange","neon","yellow","icy","cool gray","cool grey","blue gray","blue grey","yellow cream","orange wood","distressed","farmhouse","glossy chrome","silver overload"];
+
+    let score = 82;
+    let tags = [];
+    let hasDealBreaker = false;
+
+    dealBreakers.forEach(w => {
+      if(text.indexOf(w) !== -1){
+        hasDealBreaker = true;
+        score -= 35;
+        tags.push(["bad", w]);
+      }
+    });
+
+    strongGood.forEach(w => { if(text.indexOf(w) !== -1){ score += 5; tags.push(["good", w]); }});
+    okayGood.forEach(w => { if(text.indexOf(w) !== -1){ score += 2; tags.push(["good", w]); }});
+    caution.forEach(w => { if(text.indexOf(w) !== -1){ score -= 4; tags.push(["warn", w]); }});
+
+    if(text.indexOf("red") !== -1 && !text.includes("red oak")){
+      score -= 28;
+      tags.push(["bad", "red"]);
+      hasDealBreaker = true;
+    }
+
+    if(text.indexOf("couch") !== -1 || text.indexOf("sofa") !== -1 || text.indexOf("sectional") !== -1){
+      if(hasDealBreaker) score -= 12;
+      else score -= 3;
+      tags.push(["warn", "large furniture"]);
+    }
+
+    if(hasDealBreaker) score = Math.min(score, 49);
+    score = Math.max(15, Math.min(98, score));
     return {score, tags};
   }
 
   function verdict(score){
-    if(score >= 85) return "Strong match. This fits the Modern Organic Transitional direction.";
-    if(score >= 70) return "Likely works. Check undertones and balance it with warm textures.";
-    return "Risky match. It may pull the house too cool, too heavy, or off-palette.";
+    if(score >= 88) return "Excellent match. This is highly aligned with your home palette.";
+    if(score >= 78) return "Strong match. This fits the Modern Organic Transitional direction.";
+    if(score >= 65) return "Possible, but verify undertones and use it carefully.";
+    if(score >= 50) return "Weak match. It may fight the cabinets, gray countertop, floors, or overall vibe.";
+    return "Does not match. This is outside the palette and should probably be avoided.";
   }
 
   function showResult(result){
@@ -151,13 +179,7 @@
     $("tags").innerHTML = result.tags.map(t => '<span class="pill '+t[0]+'">'+t[1]+'</span>').join("");
   }
 
-  function clearForm(){
-    $("title").value = "";
-    $("notes").value = "";
-    $("photo").value = "";
-    pendingImage = "";
-    clearError();
-  }
+  function clearForm(){ $("title").value = ""; $("notes").value = ""; $("photo").value = ""; pendingImage = ""; clearError(); }
 
   function saveItem(){
     clearError();
@@ -165,15 +187,7 @@
     const room = $("room").value;
     const notes = $("notes").value.trim();
     const result = analyzeText(title + " " + room + " " + notes);
-    const item = {
-      id: Date.now(),
-      title: title,
-      room: room,
-      notes: notes,
-      image: pendingImage,
-      score: result.score,
-      tags: result.tags
-    };
+    const item = { id: Date.now(), title, room, notes, image: pendingImage, score: result.score, tags: result.tags };
     board.unshift(item);
     saveBoard();
     showResult(result);
@@ -183,66 +197,35 @@
 
   function renderBoard(){
     const saved = $("saved");
-    if(!board.length){
-      saved.innerHTML = "<p class='small'>No saved items yet.</p>";
-      return;
-    }
-    saved.innerHTML = board.map(item => {
-      return '<div class="item">' +
-        (item.image ? '<img src="'+item.image+'" alt="Saved option">' : '') +
-        '<strong>'+escapeHtml(item.title)+'</strong>' +
-        '<div class="small">'+escapeHtml(item.room)+'</div>' +
-        '<div class="score" style="font-size:28px">'+item.score+'%</div>' +
-        '<div class="small">'+verdict(item.score)+'</div>' +
-        '<p class="small">'+escapeHtml(item.notes || "")+'</p>' +
-        '<button class="light deleteBtn" type="button" data-id="'+item.id+'">Delete</button>' +
-      '</div>';
-    }).join("");
-
-    document.querySelectorAll(".deleteBtn").forEach(btn => {
-      btn.addEventListener("click", function(){
-        const id = Number(this.getAttribute("data-id"));
-        board = board.filter(x => x.id !== id);
-        saveBoard();
-        renderBoard();
-      });
-    });
-  }
-
-  function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, function(m){
-      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m];
-    });
-  }
-
-  function exportData(){
-    const blob = new Blob([JSON.stringify(board, null, 2)], {type:"application/json"});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "home-palette-board.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
-
-  function resetBoard(){
-    if(window.confirm("Delete all saved options on this device?")){
-      board = [];
-      localStorage.removeItem(storageKey);
+    if(!board.length){ saved.innerHTML = "<p class='small'>No saved items yet.</p>"; return; }
+    saved.innerHTML = board.map(item => '<div class="item">' +
+      (item.image ? '<img src="'+item.image+'" alt="Saved option">' : '') +
+      '<strong>'+escapeHtml(item.title)+'</strong>' +
+      '<div class="small">'+escapeHtml(item.room)+'</div>' +
+      '<div class="score" style="font-size:28px">'+item.score+'%</div>' +
+      '<div class="small">'+verdict(item.score)+'</div>' +
+      '<p class="small">'+escapeHtml(item.notes || "")+'</p>' +
+      '<button class="light deleteBtn" type="button" data-id="'+item.id+'">Delete</button>' +
+    '</div>').join("");
+    document.querySelectorAll(".deleteBtn").forEach(btn => btn.addEventListener("click", function(){
+      const id = Number(this.getAttribute("data-id"));
+      board = board.filter(x => x.id !== id);
+      saveBoard();
       renderBoard();
-      $("score").textContent = "—";
-      $("verdict").textContent = "Add an option to check it against your theme.";
-      $("tags").innerHTML = "";
-    }
+    }));
   }
+
+  function escapeHtml(str){ return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]); }
+  function exportData(){ const blob = new Blob([JSON.stringify(board, null, 2)], {type:"application/json"}); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "home-palette-board.json"; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+  function resetBoard(){ if(window.confirm("Delete all saved options on this device?")){ board = []; localStorage.removeItem(storageKey); renderBoard(); $("score").textContent = "—"; $("verdict").textContent = "Add an option to check it against your theme."; $("tags").innerHTML = ""; } }
 
   $("photo").addEventListener("change", function(){
     clearError();
     const f = this.files && this.files[0];
     if(!f){ pendingImage = ""; return; }
     const reader = new FileReader();
-    reader.onload = function(e){ pendingImage = e.target.result; };
-    reader.onerror = function(){ showError("Photo could not be loaded. Try a different image."); };
+    reader.onload = e => { pendingImage = e.target.result; };
+    reader.onerror = () => { showError("Photo could not be loaded. Try a different image."); };
     reader.readAsDataURL(f);
   });
 
